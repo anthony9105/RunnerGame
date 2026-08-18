@@ -11,7 +11,7 @@
 	- What PlayerController to use
 	- What Character/Pawn to spawn
 	- What happens when a run starts
-	- What happens when a run end
+	- What happens when a run ends
 * /
 
 /**
