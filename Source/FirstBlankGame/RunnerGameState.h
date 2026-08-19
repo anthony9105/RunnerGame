@@ -29,4 +29,13 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool GetGameOver() const;
 
+	UFUNCTION(BlueprintCallable)
+	bool SetCurrentScore(int32 NewCurrentScore);
+
+	UFUNCTION(BlueprintCallable)
+	bool SetCurrentDistance(int32 NewCurrentDistance);
+
+	UFUNCTION(BlueprintCallable)
+	void SetGameOver(bool NewGameOver);
+
 };

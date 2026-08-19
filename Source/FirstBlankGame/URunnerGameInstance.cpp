@@ -30,7 +30,7 @@ bool URunnerGameInstance::SetRunSpeed(int32 NewRunSpeed) {
 	if (NewRunSpeed > MaxRunSpeed) return false;
 	if (NewRunSpeed < MinRunSpeed) return false;
 
-	RunSpeed = NewRunSpeed;
+	this->RunSpeed = NewRunSpeed;
 	return true;
 }
 
