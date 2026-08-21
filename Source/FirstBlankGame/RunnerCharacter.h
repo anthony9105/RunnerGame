@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "RunnerCharacter.generated.h"
 
-UENUM(Blueprintable)
+UENUM(BlueprintType)
 enum class ERunnerLane : uint8 {
 	Left,
 	Middle,
@@ -20,6 +20,40 @@ class FIRSTBLANKGAME_API ARunnerCharacter : public ACharacter
 
 private:
 	ERunnerLane CurrentLane;
+
+	// Controls how strongly the character is launched upward when jumping.
+	UPROPERTY(
+		EditDefaultsOnly,
+		BlueprintReadOnly,
+		Category = "Movement",
+		meta = (AllowPrivateAccess = "true")
+	)
+	float JumpZVelocity = 600.0f;
+
+
+	// Controls how strongly gravity affects the character while airborne.
+	UPROPERTY(
+		EditDefaultsOnly,
+		BlueprintReadOnly,
+		Category = "Movement",
+		meta = (AllowPrivateAccess = "true")
+	)
+	float GravityScale = 1.0f;
+
+	/**
+	 * Percentage of the theoretical maximum jump height
+	 * that we consider comfortably jumpable.
+	 *
+	 * For example, 0.8 means the player only needs to reach
+	 * 80% of their maximum jump height.
+	 */
+	UPROPERTY(
+		EditDefaultsOnly,
+		BlueprintReadOnly,
+		Category = "Movement",
+		meta = (AllowPrivateAccess = "true")
+	)
+	float ComfortableJumpHeightRatio = 0.8f;
 public:
 	// Sets default values for this character's properties
 	ARunnerCharacter();
@@ -46,5 +80,8 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	ERunnerLane GetCurrentLane() const;
+
+	UFUNCTION(BlueprintPure)
+	float GetComfortableJumpHeight() const;
 
 };

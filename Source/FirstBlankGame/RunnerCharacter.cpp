@@ -2,12 +2,17 @@
 
 
 #include "RunnerCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 ARunnerCharacter::ARunnerCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Configure the character's jump.
+	GetCharacterMovement()->JumpZVelocity = this->JumpZVelocity;
+	GetCharacterMovement()->GravityScale = this->GravityScale;
 
 	CurrentLane = ERunnerLane::Middle;
 }
@@ -73,4 +78,21 @@ void ARunnerCharacter::Jump() {
 
 ERunnerLane ARunnerCharacter::GetCurrentLane() const {
 	return CurrentLane;
+}
+
+float ARunnerCharacter::GetComfortableJumpHeight() const {
+	/**
+	* Approximate maximum height of the jump is:
+	* 
+	*	h = (velocity**2) / (2 * gravity)
+	*/
+
+	const float Gravity = FMath::Abs(
+		GetCharacterMovement()->GetGravityZ()
+	);
+
+	const float MaxJumpHeight =
+		FMath::Square(JumpZVelocity) / (2.0f * Gravity);
+
+	return MaxJumpHeight * ComfortableJumpHeightRatio;
 }
