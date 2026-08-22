@@ -6,6 +6,7 @@
 #include "RunnerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Obstacle.h"
+#include "URunnerGameInstance.h"
 
 // Sets default values
 ATrackManager::ATrackManager() {
@@ -36,6 +37,21 @@ void ATrackManager::BeginPlay() {
 			TEXT("TrackManager: Could not find RunnerCharacter.")
 		);
 		return;
+	}
+
+
+	// Cache the GameInstance so GetLaneOffset() doesn't need to
+	// look it up every time an obstacle row is spawned.
+	RunnerGameInstance = Cast<URunnerGameInstance>(
+		UGameplayStatics::GetGameInstance(this)
+	);
+
+	if (!RunnerGameInstance) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("TrackManager: Could not get URunnerGameInstance.")
+		);
 	}
 
 	/**
@@ -231,13 +247,18 @@ void ATrackManager::SpawnTile() {
 	 */
 	ActiveTiles.Add(NewTile);
 
+	/**
+	 * Now that the tile exists in the world, populate it with
+	 * however many obstacle rows fit along its length.
+	 */
+	SpawnObstaclesForTile(NewTile);
+
 }
 
 
 void ATrackManager::MoveTiles(float DeltaTime) {
-	// TODO: eventually get the runspeed from the
-	// RunnerGameInstance
-	const float RunSpeed = 500.0f;
+	// const float RunSpeed = 500.0f;
+	const float RunSpeed = RunnerGameInstance->GetRunSpeed();
 
 	for (ARunnerTrackTile* Tile : ActiveTiles) {
 		// A tile might've been destoryed or 
@@ -453,6 +474,14 @@ TArray<FObstacleSpawnData> ATrackManager::GenerateObstacleRow() {
 
 
 float ATrackManager::GetLaneOffset(ERunnerLane Lane) const {
+	// Fall back to 0 (Middle) if the GameInstance isn't available
+	// for some reason, rather than crashing.
+	if (!RunnerGameInstance) {
+		return 0.0f;
+	}
+
+	const float LaneWidth = RunnerGameInstance->GetLaneWidth();
+
 	switch (Lane) {
 		case ERunnerLane::Left:
 			return -LaneWidth;

@@ -22,6 +22,7 @@ enum class ERunnerLane : uint8;
 class ARunnerTrackTile;
 class ARunnerCharacter;
 class AObstacle;
+class URunnerGameInstance;
 
 
 /**
@@ -199,6 +200,14 @@ private:
 	TObjectPtr<ARunnerCharacter> RunnerCharacter;
 
 
+	// Cached reference to the GameInstance, which is the single
+	// source of truth for LaneWidth (shared with ARunnerCharacter
+	// so obstacle placement always matches where lanes actually
+	// are).
+	UPROPERTY()
+	TObjectPtr<URunnerGameInstance> RunnerGameInstance;
+
+
 	UPROPERTY(
 		EditDefaultsOnly, BlueprintReadOnly, 
 		Category = "Obstacles", meta = (AllowPrivateAccess = "true")
@@ -221,16 +230,6 @@ private:
 	// we stop spawning obstacle rows.
 	UPROPERTY(EditDefaultsOnly, Category = "Obstacles")
 	float ObstacleEndOffset = 500.0f;
-
-
-	// Distance, in Unreal units, between the center of one lane
-	// and the center of the track (Middle lane).
-	//
-	// Left lane   = -LaneWidth
-	// Middle lane =  0
-	// Right lane  = +LaneWidth
-	UPROPERTY(EditDefaultsOnly, Category = "Obstacles")
-	float LaneWidth = 300.0f;
 	
     // Creates the initial set of track tiles when the game starts.
 	void SpawnInitialTiles();

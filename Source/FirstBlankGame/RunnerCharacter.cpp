@@ -3,6 +3,7 @@
 
 #include "RunnerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "URunnerGameInstance.h"
 
 // Sets default values
 ARunnerCharacter::ARunnerCharacter()
@@ -22,6 +23,22 @@ void ARunnerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// Record the character's starting lateral position as the
+	// Middle-lane baseline. Left/Right lane targets are computed
+	// relative to this in Tick().
+	BaseY = AActor::GetActorLocation().Y;
+
+	// Cache the GameInstance so GetLaneOffset() doesn't need to
+	// look it up every frame.
+	RunnerGameInstance = Cast<URunnerGameInstance>(GetGameInstance());
+
+	if (!RunnerGameInstance) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("RunnerCharacter: Could not get URunnerGameInstance.")
+		);
+	}
 }
 
 // Called every frame
@@ -29,6 +46,30 @@ void ARunnerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	/**
+	 * Smoothly move the character toward its target lane.
+	 *
+	 * MoveLeft()/MoveRight() only update CurrentLane — the
+	 * actual movement happens here, every frame, so the
+	 * character glides between lanes instead of teleporting.
+	 */
+	const FVector CurrentLocation = GetActorLocation();
+	const float TargetY = BaseY + GetLaneOffset(CurrentLane);
+
+	const float NewY = FMath::FInterpTo(
+		CurrentLocation.Y,
+		TargetY,
+		DeltaTime,
+		LaneChangeSpeed
+	);
+
+	// Only touch Y. X and Z are left alone so we don't fight
+	// with CharacterMovementComponent's handling of gravity,
+	// jumping, and (eventually) forward motion.
+	SetActorLocation(
+		FVector(CurrentLocation.X, NewY, CurrentLocation.Z),
+		/* bSweep */ true
+	);
 }
 
 // Called to bind functionality to input
@@ -50,8 +91,6 @@ void ARunnerCharacter::MoveLeft() {
 			break;
 	}
 
-	// TODO: apply the movement
-
 	return;
 }
 
@@ -66,8 +105,6 @@ void ARunnerCharacter::MoveRight() {
 		CurrentLane = ERunnerLane::Right;
 		break;
 	}
-
-	// TODO: apply the movement
 
 	return;
 }
@@ -95,4 +132,29 @@ float ARunnerCharacter::GetComfortableJumpHeight() const {
 		FMath::Square(JumpZVelocity) / (2.0f * Gravity);
 
 	return MaxJumpHeight * ComfortableJumpHeightRatio;
+}
+
+
+
+float ARunnerCharacter::GetLaneOffset(ERunnerLane Lane) const {
+	// Fall back to 0 (no offset / stay in current lane visually)
+	// if the GameInstance isn't available for some reason, rather
+	// than crashing.
+	if (!RunnerGameInstance) {
+		return 0.0f;
+	}
+
+	const float LaneWidth = RunnerGameInstance->GetLaneWidth();
+
+	switch (Lane) {
+		case ERunnerLane::Left:
+			return -LaneWidth;
+
+		case ERunnerLane::Right:
+			return LaneWidth;
+
+		case ERunnerLane::Middle:
+		default:
+			return 0.0f;
+	}
 }

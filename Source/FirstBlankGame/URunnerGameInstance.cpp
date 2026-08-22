@@ -35,3 +35,6 @@ bool URunnerGameInstance::SetRunSpeed(int32 NewRunSpeed) {
 }
 
 
+float URunnerGameInstance::GetLaneWidth() const {
+	return LaneWidth;
+}
