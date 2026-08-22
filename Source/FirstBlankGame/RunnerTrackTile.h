@@ -40,12 +40,25 @@ public:
 	 */
 	FVector GetEndPointLocation() const;
 
+
+	/**
+	 * Returns the length of this tile along its local forward
+	 * (X) axis, measured from the tile's origin to its EndPoint.
+	 *
+	 * Because this is based on EndPoint's RELATIVE location,
+	 * the result is independent of the tile's current world
+	 * position or rotation.
+	 *
+	 * The TrackManager uses this to figure out how many obstacle
+	 * rows can fit along the tile.
+	 */
+	float GetTrackLength() const;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 private:
-	//
 	// The root component of the track tile.
 	//
 	// Components attached to this component will move with the tile.
@@ -78,6 +91,4 @@ private:
 	//                     EndPoint
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> EndPoint;
-	
-
 };

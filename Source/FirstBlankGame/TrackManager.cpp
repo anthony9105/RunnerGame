@@ -5,6 +5,7 @@
 #include "RunnerTrackTile.h"
 #include "RunnerCharacter.h"
 #include "Kismet/GameplayStatics.h"
+#include "Obstacle.h"
 
 // Sets default values
 ATrackManager::ATrackManager() {
@@ -323,5 +324,251 @@ void ATrackManager::RemoveOldTiles() {
 			// Remove the pointer from ActiveTiles array too.
 			ActiveTiles.RemoveAt(i);
 		}
+	}
+}
+
+
+TArray<ERunnerLane> ATrackManager::GetAllLanes() {
+	return {
+		ERunnerLane::Left,
+		ERunnerLane::Middle,
+		ERunnerLane::Right
+	};
+}
+
+
+TArray<FObstacleSpawnData> ATrackManager::GenerateObstacleRow() {
+	TArray<FObstacleSpawnData> Row;
+
+	// We need a valid RunnerCharacter to determine
+	// whether an obstacle can be comfortably jumped.
+	if (!RunnerCharacter) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("TrackManager: RunnerCharacter is null when generating obstacle row.")
+		);
+		return Row;
+	}
+
+
+	// We need at least one obstacle option to choose from.
+	if (ObstacleOptions.IsEmpty()) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("TrackManager: ObstacleOptions is empty.")
+		);
+		return Row;
+	}
+
+
+	// Keep track of which lanes are still available.
+	TArray<ERunnerLane> AvailableLanes = GetAllLanes();
+	const int32 LaneCount = AvailableLanes.Num();
+
+	if (LaneCount == 0) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("TrackManager: No lanes are available.")
+		);
+		return Row;
+	}
+
+	const int32 MaxObstaclesPerRow = FMath::Min(3, LaneCount);
+	const int32 ObstacleCount = FMath::RandRange(1, MaxObstaclesPerRow);
+	const float ComfortableJumpHeight = RunnerCharacter->GetComfortableJumpHeight();
+
+	/**
+	 * If every lane is going to contain an obstacle,
+	 * there must be at least one obstacle that the player
+	 * can comfortably jump over.
+	 *
+	 * Find all obstacle definitions that satisfy that
+	 * requirement.
+	 */
+	TArray<int32> JumpableObstacleIndices;
+	for (int32 i = 0; i < ObstacleOptions.Num(); ++i) {
+		const FObstacleDefinition& Definition = ObstacleOptions[i];
+
+		if (Definition.Height <= ComfortableJumpHeight) {
+			JumpableObstacleIndices.Add(i);
+		}
+	}
+
+	if (ObstacleCount == LaneCount && JumpableObstacleIndices.IsEmpty()) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("TrackManager: Cannot generate a safe obstacle row. "
+				"All lanes would be blocked, but no obstacle is "
+				"comfortably jumpable.")
+		);
+		return {};
+	}
+
+
+	// If every lane is to have an obstacle, make sure at least 1 can be
+	// jumped over
+	if (ObstacleCount == LaneCount) {
+		const int32 JumpableOptionIndex = JumpableObstacleIndices[
+			FMath::RandRange(
+				0, JumpableObstacleIndices.Num() - 1
+			)
+		];
+
+		const int32 LaneIndex = FMath::RandRange(0, AvailableLanes.Num());
+		const ERunnerLane Lane = AvailableLanes[LaneIndex];
+
+		AvailableLanes.RemoveAt(LaneIndex);
+
+		FObstacleSpawnData SpawnData;
+		SpawnData.ObstacleClass = ObstacleOptions[JumpableOptionIndex].ObstacleClass;
+		SpawnData.Lane = Lane;
+
+		Row.Add(SpawnData);
+	}
+
+
+	// Assign the rest of the obstacles
+	while (Row.Num() < ObstacleCount) {
+		const int32 LaneIndex = FMath::RandRange(0, AvailableLanes.Num() - 1);
+		const ERunnerLane Lane = AvailableLanes[LaneIndex];
+
+		AvailableLanes.RemoveAt(LaneIndex);
+
+		const int32 ObstacleIndex = FMath::RandRange(0, ObstacleOptions.Num() - 1);
+		const FObstacleDefinition& Definition = ObstacleOptions[ObstacleIndex];
+
+		FObstacleSpawnData SpawnData;
+		SpawnData.ObstacleClass = Definition.ObstacleClass;
+		SpawnData.Lane = Lane;
+
+		Row.Add(SpawnData);
+	}
+
+	return Row;
+}
+
+
+float ATrackManager::GetLaneOffset(ERunnerLane Lane) const {
+	switch (Lane) {
+		case ERunnerLane::Left:
+			return -LaneWidth;
+
+		case ERunnerLane::Right:
+			return LaneWidth;
+
+		case ERunnerLane::Middle:
+		default:
+			return 0.0f;
+	}
+}
+
+
+void ATrackManager::SpawnObstacleRow(
+	ARunnerTrackTile* Tile, const FVector& RowLocation
+) {
+	if (!Tile) {
+		UE_LOG(LogTemp, Error, TEXT("TrackManager: Tile not valid."));
+		return;
+	}
+
+	UWorld* World = AActor::GetWorld();
+
+	if (!World) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("TrackManager: Could not get World in SpawnObstacleRow.")
+		);
+		return;
+	}
+
+	const TArray<FObstacleSpawnData> SpawnDataRow = GenerateObstacleRow();
+
+	for (const FObstacleSpawnData& SpawnData : SpawnDataRow) {
+		if (!SpawnData.ObstacleClass) continue;
+
+		/**
+		 * Offset the row's base location sideways according to
+		 * the obstacle's assigned lane.
+		 *
+		 * NOTE: this assumes lanes are offset along Y and that
+		 * the tile isn't rotated relative to the world. If tiles
+		 * can curve/rotate, this should instead offset along the
+		 * tile's right vector (Tile->GetActorRightVector()).
+		 */
+		FVector ObstacleLocation = RowLocation;
+		ObstacleLocation.Y += GetLaneOffset(SpawnData.Lane);
+
+		FActorSpawnParameters SpawnParameters;
+
+		AObstacle* NewObstacle = World->SpawnActor<AObstacle>(
+			SpawnData.ObstacleClass,
+			ObstacleLocation,
+			FRotator::ZeroRotator,
+			SpawnParameters
+		);
+
+		if (!NewObstacle) {
+			UE_LOG(
+				LogTemp,
+				Error,
+				TEXT("TrackManager: Failed to spawn obstacle.")
+			);
+		}
+	}
+	
+}
+
+
+void ATrackManager::SpawnObstaclesForTile(ARunnerTrackTile* Tile) {
+	if (!Tile) {
+		UE_LOG(LogTemp, Error, TEXT("TrackManager: Tile not valid."));
+		return;
+	}
+
+	if (ObstacleRowSpacing <= 0.0f) {
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("TrackManager: ObstacleRowSpacing must be greater than 0.")
+		);
+		return;
+	}
+
+	const float TileLength = Tile->GetTrackLength();
+
+	if (TileLength < ObstacleStartOffset + ObstacleEndOffset) {
+		UE_LOG(LogTemp, Error, TEXT("TrackManager: Not enough room for even a single row"));
+		return;
+	}
+
+	const FVector TileOrigin = Tile->GetActorLocation();
+	const FVector TileForward = Tile->GetActorForwardVector();
+	const float UsableLength = TileLength - ObstacleEndOffset;
+
+	/**
+	 * Walk along the tile from ObstacleStartOffset to
+	 * (TileLength - ObstacleEndOffset), placing one row every
+	 * ObstacleRowSpacing units.
+	 *
+	 * Example, with TileLength = 2000, ObstacleStartOffset = 500,
+	 * ObstacleEndOffset = 500, ObstacleRowSpacing = 600:
+	 *
+	 *     Row 1 @ 500
+	 *     Row 2 @ 1100
+	 *     (next would be 1700, but UsableLength is 1500, so we stop)
+	 */
+	for (
+		float DistanceAlongTile = ObstacleStartOffset;
+		DistanceAlongTile <= UsableLength;
+		DistanceAlongTile += ObstacleRowSpacing
+	) {
+		const FVector RowLocation = TileOrigin + (TileForward * DistanceAlongTile);
+
+		SpawnObstacleRow(Tile, RowLocation);
 	}
 }

@@ -6,12 +6,56 @@
 #include "GameFramework/Actor.h"
 #include "TrackManager.generated.h"
 
+
+// Forward declaration of the lane enum (defined in RunnerCharacter.h).
+//
+// We only need the TYPE here, not its enumerators, so a forward
+// declaration avoids a circular include with RunnerCharacter.h
+// (which includes TrackManager.h).
+enum class ERunnerLane : uint8;
+
+
 // Forward declaration.
 //
 // We only need to know that ARunnerTrackTile is an Unreal Actor
 // in this header. Its full definition will be included in the .cpp.
 class ARunnerTrackTile;
 class ARunnerCharacter;
+class AObstacle;
+
+
+/**
+ * Describes an obstacle that should be spawned in a row.
+ *
+ * This represents spawn information, not an actual AObstacle Actor.
+ */
+USTRUCT(BlueprintType)
+struct FObstacleSpawnData {
+	GENERATED_BODY()
+
+	// The type of obstacle that should be spawned.
+	UPROPERTY()
+	TSubclassOf<AObstacle> ObstacleClass;
+
+	// The lane where the obstacle should be placed.
+	UPROPERTY()
+	ERunnerLane Lane;
+};
+
+
+
+// This describes an available obstacle type before anything is spawned.
+USTRUCT(BlueprintType)
+struct FObstacleDefinition {
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<AObstacle> ObstacleClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float Height = 0.0f;
+};
+
 
 /**
  * Manages the endless runner's track.
@@ -62,8 +106,7 @@ class ARunnerCharacter;
  *                    Spawn Tile 4
  */
 UCLASS()
-class FIRSTBLANKGAME_API ATrackManager : public AActor
-{
+class FIRSTBLANKGAME_API ATrackManager : public AActor {
 	GENERATED_BODY()
 	
 public:
@@ -97,7 +140,6 @@ private:
 	//     BP_RunnerTrackTile
 	//
 	// The manager can then spawn instances of that class.
-	//
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<ARunnerTrackTile> TrackTileClass;
 
@@ -156,6 +198,39 @@ private:
 	UPROPERTY()
 	TObjectPtr<ARunnerCharacter> RunnerCharacter;
 
+
+	UPROPERTY(
+		EditDefaultsOnly, BlueprintReadOnly, 
+		Category = "Obstacles", meta = (AllowPrivateAccess = "true")
+	)
+	TArray<FObstacleDefinition> ObstacleOptions;
+
+
+	// Minimum distance between consecutive obstacle rows.
+	UPROPERTY(EditDefaultsOnly, Category = "Obstacles")
+	float ObstacleRowSpacing = 600.0f;
+
+
+	// Distance from the beginning of a tile before
+	// the first obstacle row can be spawned.
+	UPROPERTY(EditDefaultsOnly, Category = "Obstacles")
+	float ObstacleStartOffset = 500.0f;
+
+
+	// Distance from the end of a tile after which
+	// we stop spawning obstacle rows.
+	UPROPERTY(EditDefaultsOnly, Category = "Obstacles")
+	float ObstacleEndOffset = 500.0f;
+
+
+	// Distance, in Unreal units, between the center of one lane
+	// and the center of the track (Middle lane).
+	//
+	// Left lane   = -LaneWidth
+	// Middle lane =  0
+	// Right lane  = +LaneWidth
+	UPROPERTY(EditDefaultsOnly, Category = "Obstacles")
+	float LaneWidth = 300.0f;
 	
     // Creates the initial set of track tiles when the game starts.
 	void SpawnInitialTiles();
@@ -182,5 +257,43 @@ private:
 	// Checks whether any tiles have moved far enough behind
 	// the player to be removed.
 	void RemoveOldTiles();
+
+
+	/**
+	 * Generates a safe configuration of obstacles
+	 * for one row of the track.
+	 *
+	 * The returned data describes what should be spawned
+	 * and in which lane.
+	 */
+	TArray<FObstacleSpawnData> GenerateObstacleRow();
+
+
+	/**
+	 * Spawns one row of obstacles (as described by GenerateObstacleRow)
+	 * at RowLocation, offsetting each obstacle sideways according to
+	 * its assigned lane.
+	 */
+	void SpawnObstacleRow(
+		ARunnerTrackTile* Tile,
+		const FVector& RowLocation
+	);
+
+
+	/**
+	 * Walks the length of a newly-spawned tile and spawns as many
+	 * obstacle rows as fit, spaced ObstacleRowSpacing apart, starting
+	 * ObstacleStartOffset from the tile's beginning and stopping
+	 * ObstacleEndOffset before the tile's end.
+	 */
+	void SpawnObstaclesForTile(ARunnerTrackTile* Tile);
+
+
+	// Converts a lane enum into a world-space Y offset relative
+	// to the track's center line.
+	float GetLaneOffset(ERunnerLane Lane) const;
+
+
+	static TArray<ERunnerLane> GetAllLanes();
 
 };

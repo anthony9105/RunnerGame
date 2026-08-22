@@ -71,3 +71,15 @@ FVector ARunnerTrackTile::GetEndPointLocation() const {
 	return EndPoint->GetComponentLocation();
 }
 
+
+float ARunnerTrackTile::GetTrackLength() const {
+	/**
+	 * EndPoint's RELATIVE location gives us the tile's length
+	 * along its local X (forward) axis.
+	 *
+	 * Using the relative (rather than world) location means this
+	 * works correctly no matter where the tile currently sits or
+	 * how it's rotated in the world.
+	 */
+	return EndPoint->GetRelativeLocation().X;
+}
