@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Obstacle.h"
 #include "URunnerGameInstance.h"
+#include "RunnerGameState.h"
 
 // Sets default values
 ATrackManager::ATrackManager() {
@@ -54,6 +55,18 @@ void ATrackManager::BeginPlay() {
 		);
 	}
 
+
+	RunnerGameState = GetWorld() 
+		? GetWorld()->GetGameState<ARunnerGameState>() 
+		: nullptr;
+
+	if (!RunnerGameState) {
+		UE_LOG(
+			LogTemp, Error, 
+			TEXT("TrackManager: Could not get ARunnerGameState.")
+		);
+	}
+
 	/**
 	 * Create the initial track.
 	 *
@@ -67,6 +80,13 @@ void ATrackManager::BeginPlay() {
 // Called every frame
 void ATrackManager::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+
+	// Once the run has ended, freeze the track in place rather
+	// than continuing to scroll/despawn tiles underneath a dead
+	// character.
+	if (RunnerGameState && RunnerGameState->GetGameOver()) {
+		return;
+	}
 
 	/**
 	 * Every frame we move the active track.
@@ -93,6 +113,10 @@ void ATrackManager::Tick(float DeltaTime) {
 	 * Those tiles can safely be destroyed.
 	 */
 	RemoveOldTiles();
+
+	// Advance distance/score to reflect how far the track just
+	// scrolled this frame.
+	UpdateRunProgress(DeltaTime);
 
 	/**
 	 * TODO: Add something like:
@@ -600,4 +624,19 @@ void ATrackManager::SpawnObstaclesForTile(ARunnerTrackTile* Tile) {
 
 		SpawnObstacleRow(Tile, RowLocation);
 	}
+}
+
+
+void ATrackManager::UpdateRunProgress(float DeltaTime) {
+	if (!RunnerGameState || !RunnerGameInstance) {
+		return;
+	}
+
+	const float RunSpeed = static_cast<float>(RunnerGameInstance->GetRunSpeed());
+
+	// RunnerGameState owns turning this raw movement amount into
+	// CurrentDistance/CurrentScore (including the float-accumulation
+	// needed to avoid losing fractional per-frame progress to
+	// int32 truncation) — we just report how far we moved.
+	RunnerGameState->AddDistance(RunSpeed * DeltaTime);
 }

@@ -25,6 +25,28 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	/**
+	 * Called when something begins overlapping ObstacleMesh.
+	 *
+	 * If the overlapping actor is the RunnerCharacter, this
+	 * triggers game over.
+	 *
+	 * Because this is overlap-based rather than a physical block,
+	 * jumping over the obstacle naturally avoids triggering it —
+	 * as long as ObstacleMesh's collision matches its visual
+	 * height, a character whose capsule is above the mesh when
+	 * passing through won't overlap it at all.
+	 */
+	UFUNCTION()
+	void OnMeshBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult
+	);
+
 private:
 	/**
 	 * The visual mesh and collision for the obstacle.

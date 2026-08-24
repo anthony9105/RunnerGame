@@ -23,6 +23,7 @@ class ARunnerTrackTile;
 class ARunnerCharacter;
 class AObstacle;
 class URunnerGameInstance;
+class ARunnerGameState;
 
 
 /**
@@ -208,6 +209,12 @@ private:
 	TObjectPtr<URunnerGameInstance> RunnerGameInstance;
 
 
+	// Cached reference to the GameState, checked each Tick so
+	// the track stops moving once the run has ended.
+	UPROPERTY()
+	TObjectPtr<ARunnerGameState> RunnerGameState;
+
+
 	UPROPERTY(
 		EditDefaultsOnly, BlueprintReadOnly, 
 		Category = "Obstacles", meta = (AllowPrivateAccess = "true")
@@ -294,5 +301,13 @@ private:
 
 
 	static TArray<ERunnerLane> GetAllLanes();
+
+
+	/**
+	 * Advances CurrentDistance (and, for now, CurrentScore — see
+	 * the .cpp) on RunnerGameState based on how far the track
+	 * moved this frame.
+	 */
+	void UpdateRunProgress(float DeltaTime);
 
 };
