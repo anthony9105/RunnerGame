@@ -82,12 +82,15 @@ void ARunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 void ARunnerCharacter::MoveLeft() {
 	switch (CurrentLane) {
 		case ERunnerLane::Left:
+			// UE_LOG(LogTemp, Log, TEXT("Already in left lane."));
 			return;
 		case ERunnerLane::Right:
 			CurrentLane = ERunnerLane::Middle;
+			// UE_LOG(LogTemp, Log, TEXT("Moved from right to middle."));
 			break;
 		case ERunnerLane::Middle:
 			CurrentLane = ERunnerLane::Left;
+			// UE_LOG(LogTemp, Log, TEXT("Moved from middle to left."));
 			break;
 	}
 
@@ -98,11 +101,14 @@ void ARunnerCharacter::MoveRight() {
 	switch (CurrentLane) {
 	case ERunnerLane::Left:
 		CurrentLane = ERunnerLane::Middle;
+		// UE_LOG(LogTemp, Log, TEXT("Moved from left to middle."));
 		break;
 	case ERunnerLane::Right:
+		// UE_LOG(LogTemp, Log, TEXT("Already in right lane."));
 		return;
 	case ERunnerLane::Middle:
 		CurrentLane = ERunnerLane::Right;
+		// UE_LOG(LogTemp, Log, TEXT("Moved from middle to right."));
 		break;
 	}
 

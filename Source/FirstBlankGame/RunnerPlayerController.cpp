@@ -112,18 +112,18 @@ void ARunnerPlayerController::SetupInputComponent() {
         return;
     }
 
-    // When IA_MoveLeft is triggered, call our MoveLeft() function.
+    // When IA_MoveLeft is started, call our MoveLeft() function.
     EnhancedInputComponent->BindAction(
         MoveLeftAction,
-        ETriggerEvent::Triggered,
+        ETriggerEvent::Started,
         this,
         &ARunnerPlayerController::MoveLeft
     );
 
-    // When IA_MoveRight is triggered, call our MoveRight() function.
+    // When IA_MoveRight is started, call our MoveRight() function.
     EnhancedInputComponent->BindAction(
         MoveRightAction,
-        ETriggerEvent::Triggered,
+        ETriggerEvent::Started,
         this,
         &ARunnerPlayerController::MoveRight
     );
