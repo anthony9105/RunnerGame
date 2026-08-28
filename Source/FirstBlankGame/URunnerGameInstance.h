@@ -14,7 +14,15 @@ class FIRSTBLANKGAME_API URunnerGameInstance : public UGameInstance {
 	GENERATED_BODY()
 
 private:
-	int32 RunSpeed;
+	UPROPERTY(
+		EditDefaultsOnly,
+		BlueprintReadOnly,
+		Category = "Track",
+		meta = (AllowPrivateAccess = "true")
+	)
+	int32 RunSpeed = 500;
+
+
 	const int32 MaxRunSpeed = 1000;
 	const int32 MinRunSpeed = 10;
 
