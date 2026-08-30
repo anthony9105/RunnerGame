@@ -463,7 +463,7 @@ TArray<FObstacleSpawnData> ATrackManager::GenerateObstacleRow() {
 			)
 		];
 
-		const int32 LaneIndex = FMath::RandRange(0, AvailableLanes.Num());
+		const int32 LaneIndex = FMath::RandRange(0, AvailableLanes.Num() - 1);
 		const ERunnerLane Lane = AvailableLanes[LaneIndex];
 
 		AvailableLanes.RemoveAt(LaneIndex);
@@ -556,6 +556,9 @@ void ATrackManager::SpawnObstacleRow(
 		FVector ObstacleLocation = RowLocation;
 		ObstacleLocation.Y += GetLaneOffset(SpawnData.Lane);
 
+		// raise the spawn location by 50 units
+		ObstacleLocation.Z += 50.0f;
+
 		FActorSpawnParameters SpawnParameters;
 
 		AObstacle* NewObstacle = World->SpawnActor<AObstacle>(
@@ -571,7 +574,23 @@ void ATrackManager::SpawnObstacleRow(
 				Error,
 				TEXT("TrackManager: Failed to spawn obstacle.")
 			);
+			continue;
 		}
+
+		/**
+		 * Attach the obstacle to its tile so it scrolls along
+		 * with it in MoveTiles(). Without this, the obstacle
+		 * would stay fixed in world space while the tile moves
+		 * out from under it.
+		 *
+		 * KeepWorldTransform preserves the obstacle's current
+		 * world position/rotation at the moment of attachment
+		 * (rather than snapping it to the tile's origin).
+		 */
+		NewObstacle->AttachToActor(
+			Tile,
+			FAttachmentTransformRules::KeepWorldTransform
+		);
 	}
 	
 }
