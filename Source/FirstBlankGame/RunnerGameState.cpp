@@ -2,6 +2,7 @@
 
 
 #include "RunnerGameState.h"
+#include "URunnerGameInstance.h"
 
 /**
 * GETTERS
@@ -47,6 +48,24 @@ void ARunnerGameState::SetGameOver(bool NewGameOver) {
 	this->bGameOver = NewGameOver;
 
 	if (NewGameOver && !bWasGameOver) {
+		URunnerGameInstance* RunnerGameInstance = Cast<URunnerGameInstance>(GetGameInstance());
+
+		if (RunnerGameInstance) {
+			RunnerGameInstance->UpdateHighScore(CurrentScore);
+		}
+		else {
+			UE_LOG(
+				LogTemp,
+				Error,
+				TEXT("RunnerGameState: Could not get URunnerGameInstance to update high score.")
+			);
+		}
+
+		//// The * operator converts the resulting FString into the TCHAR* format required by %s
+		//FString Message = FString::Printf(TEXT("%s"), NewGameOver ? TEXT("True") : TEXT("False"));
+
+		//UE_LOG(LogTemp, Warning, TEXT("Broadcasting on game over.  New game over: %s"), *Message);
+
 		OnGameOver.Broadcast();
 	}
 }

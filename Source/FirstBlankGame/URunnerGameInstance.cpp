@@ -38,3 +38,17 @@ bool URunnerGameInstance::SetRunSpeed(int32 NewRunSpeed) {
 float URunnerGameInstance::GetLaneWidth() const {
 	return LaneWidth;
 }
+
+
+FString URunnerGameInstance::UpdateHighScore(int32 CandidateScore) {
+	if (CandidateScore > HighScore) {
+		HighScore = CandidateScore;
+		return TEXT("NEW High Score!!");
+	}
+	
+	if (CandidateScore == HighScore) {
+		return TEXT("Close... you tied the High Score");
+	}
+
+	return TEXT("");
+}

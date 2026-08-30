@@ -41,6 +41,10 @@ private:
 		meta = (AllowPrivateAccess = "true")
 	)
 	float LaneWidth = 300.0f;
+
+
+	UPROPERTY(BlueprintReadOnly, Category = "Track", meta = (AllowPrivateAccess = "true"))
+	int32 HighScore = 0;
 public:
 	virtual void Init() override;
 
@@ -57,5 +61,10 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	float GetLaneWidth() const;
+
+	// Returns a string message if the current high score is
+	// broken or tied.
+	UFUNCTION(BlueprintCallable)
+	FString UpdateHighScore(int32 CandidateScore);
 	
 };

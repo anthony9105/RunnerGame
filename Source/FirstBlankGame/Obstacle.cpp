@@ -112,6 +112,20 @@ void AObstacle::OnMeshBeginOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult
 ) {
+
+	//UE_LOG(
+	//	LogTemp,
+	//	Warning,
+	//	TEXT(
+	//		"GAME OVER OVERLAP: Obstacle=%s Location=%s | Character=%s Location=%s"
+	//	),
+	//	*GetName(),
+	//	*GetActorLocation().ToString(),
+	//	OtherActor ? *OtherActor->GetName() : TEXT("NULL"),
+	//	OtherActor ? *OtherActor->GetActorLocation().ToString() : TEXT("NULL")
+	//);
+
+
 	// We only care about the RunnerCharacter touching this obstacle.
 	ARunnerCharacter* RunnerCharacter = Cast<ARunnerCharacter>(OtherActor);
 	if (!RunnerCharacter) {
@@ -130,6 +144,12 @@ void AObstacle::OnMeshBeginOverlap(
 		);
 		return;
 	}
+
+	//UE_LOG(
+	//	LogTemp,
+	//	Warning,
+	//	TEXT("Obstacle: RunnerCharacter overlapped obstacle - GAME OVER")
+	//);
 
 	RunnerGameState->SetGameOver(true);
 }
