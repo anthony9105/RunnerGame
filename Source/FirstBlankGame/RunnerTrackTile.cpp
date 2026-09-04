@@ -57,6 +57,17 @@ void ARunnerTrackTile::BeginPlay() {
 	// Always call the parent implementation when overriding
 	// an Unreal lifecycle function.
 	Super::BeginPlay();
+
+
+	FVector Size = TrackMesh->Bounds.BoxExtent * 2.0f;
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("Tile Size: X=%f Y=%f Z=%f | EndPoint=%s"),
+		Size.X,
+		Size.Y,
+		Size.Z,
+		*GetEndPointLocation().ToString()
+	);
 }
 
 

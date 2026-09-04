@@ -250,7 +250,7 @@ private:
 	//
 	// This allows tiles of different lengths to connect
 	// without hardcoding their dimensions.
-	void SpawnTile();
+	void SpawnTile(bool bSpawnObstacles = true);
 
 
 	// Moves every active track tile toward the player.

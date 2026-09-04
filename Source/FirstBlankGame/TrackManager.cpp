@@ -154,12 +154,12 @@ void ATrackManager::SpawnInitialTiles() {
 	 */
 	for (int32 i = 0; i < InitialTileCount; ++i)
 	{
-		SpawnTile();
+		SpawnTile(i != 0);
 	}
 }
 
 
-void ATrackManager::SpawnTile() {
+void ATrackManager::SpawnTile(bool bSpawnObstacles) {
 	// Make sure there's a class to spawn
 	if (!TrackTileClass) {
 		UE_LOG(
@@ -271,11 +271,13 @@ void ATrackManager::SpawnTile() {
 	 */
 	ActiveTiles.Add(NewTile);
 
-	/**
-	 * Now that the tile exists in the world, populate it with
-	 * however many obstacle rows fit along its length.
-	 */
-	SpawnObstaclesForTile(NewTile);
+	if (bSpawnObstacles) {
+		/**
+		 * Now that the tile exists in the world, populate it with
+		 * however many obstacle rows fit along its length.
+		 */
+		SpawnObstaclesForTile(NewTile);
+	}
 
 }
 
@@ -362,6 +364,20 @@ void ATrackManager::RemoveOldTiles() {
 		 *     Anything below X = -1000 can be destroyed.
 		 */
 		if (TileX < PlayerX - DespawnDistance) {
+			/**
+			 * Destroying an actor does NOT automatically destroy
+			 * actors attached to it (e.g. the obstacles we attached
+			 * in SpawnObstacleRow) — they'd just become detached and
+			 * linger in the world forever. Clean them up explicitly
+			 * first.
+			 */
+			TArray<AActor*> AttachedActors;
+			Tile->GetAttachedActors(AttachedActors);
+
+			for (AActor* AttachedActor : AttachedActors) {
+				if (AttachedActor) AttachedActor->Destroy();
+			}
+
 			// DestroyActor tells Unreal that this Actor
 			// should be removed from the world.
 			Tile->Destroy();
@@ -634,12 +650,26 @@ void ATrackManager::SpawnObstaclesForTile(ARunnerTrackTile* Tile) {
 	 *     Row 2 @ 1100
 	 *     (next would be 1700, but UsableLength is 1500, so we stop)
 	 */
+	//for (
+	//	float DistanceAlongTile = ObstacleStartOffset;
+	//	DistanceAlongTile <= UsableLength;
+	//	DistanceAlongTile += ObstacleRowSpacing
+	//) {
+	//	const FVector RowLocation = TileOrigin + (TileForward * DistanceAlongTile);
+
+	//	SpawnObstacleRow(Tile, RowLocation);
+	//}
+
+	const float HalfTileLength = TileLength * 0.5f;
+
 	for (
-		float DistanceAlongTile = ObstacleStartOffset;
-		DistanceAlongTile <= UsableLength;
-		DistanceAlongTile += ObstacleRowSpacing
+		float DistanceFromStart = ObstacleStartOffset;
+		DistanceFromStart <= TileLength - ObstacleEndOffset;
+		DistanceFromStart += ObstacleRowSpacing
 	) {
-		const FVector RowLocation = TileOrigin + (TileForward * DistanceAlongTile);
+		const float DistanceFromCenter = DistanceFromStart - HalfTileLength;
+
+		const FVector RowLocation = TileOrigin + (TileForward * DistanceFromCenter);
 
 		SpawnObstacleRow(Tile, RowLocation);
 	}
