@@ -310,4 +310,7 @@ private:
 	 */
 	void UpdateRunProgress(float DeltaTime);
 
+
+	void SpawnNewTiles();
+
 };

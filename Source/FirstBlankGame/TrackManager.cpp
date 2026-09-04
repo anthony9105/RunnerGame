@@ -114,20 +114,11 @@ void ATrackManager::Tick(float DeltaTime) {
 	 */
 	RemoveOldTiles();
 
+	SpawnNewTiles();
+
 	// Advance distance/score to reflect how far the track just
 	// scrolled this frame.
 	UpdateRunProgress(DeltaTime);
-
-	/**
-	 * TODO: Add something like:
-	 *
-	 *     SpawnNewTiles();
-	 *
-	 * here.
-	 *
-	 * We don't need to implement that until the basic
-	 * tile spawning/movement system is working.
-	 */
 }
 
 
@@ -688,4 +679,33 @@ void ATrackManager::UpdateRunProgress(float DeltaTime) {
 	// needed to avoid losing fractional per-frame progress to
 	// int32 truncation) — we just report how far we moved.
 	RunnerGameState->AddDistance(RunSpeed * DeltaTime);
+}
+
+
+
+void ATrackManager::SpawnNewTiles() {
+	if (!RunnerCharacter) {
+		return;
+	}
+
+	if (ActiveTiles.Num() == 0) {
+		return;
+	}
+
+	// Get the tile furthest ahead.
+	ARunnerTrackTile* LastTile = ActiveTiles.Last();
+
+	if (!LastTile) {
+		return;
+	}
+
+	const float PlayerX = RunnerCharacter->GetActorLocation().X;
+	const float EndPointX = LastTile->GetEndPointLocation().X;
+
+	// How far ahead the end of the track currently is.
+	const float DistanceToEnd = EndPointX - PlayerX;
+
+	if (DistanceToEnd <= SpawnDistance) {
+		SpawnTile();
+	}
 }
