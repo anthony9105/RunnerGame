@@ -18,6 +18,15 @@ AObstacle::AObstacle() {
 	PrimaryActorTick.bCanEverTick = false;
 
 	/**
+	 * Create a plain, empty root component.
+	 *
+	 * ObstacleMesh attaches to this rather than being the root
+	 * itself — see the comment on Root in the header for why.
+	 */
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	AActor::SetRootComponent(Root);
+
+	/**
 	 * Create the obstacle's mesh.
 	 *
 	 * The mesh provides both the visual representation and,
@@ -28,14 +37,10 @@ AObstacle::AObstacle() {
 		TEXT("ObstacleMesh")
 	);
 
-	/**
-	 * Make the mesh the root component of the Actor.
-	 *
-	 * This means the Actor's transform directly controls
-	 * the position, rotation and scale of the obstacle mesh.
-	 */
-	AActor::SetRootComponent(ObstacleMesh);
-
+	// Attach the mesh to Root, rather than making it the root
+	// component, so its Location/Rotation can be freely adjusted
+	// per Blueprint variant.
+	ObstacleMesh->SetupAttachment(Root);
 
 	/**
 	 * Configure collision so we detect the character touching
@@ -91,19 +96,6 @@ void AObstacle::BeginPlay() {
 }
 
 
-float AObstacle::GetObstacleHeight() const {
-	/**
-	 * Bounds.BoxExtent contains half of the bounding box's
-	 * dimensions.
-	 *
-	 * Therefore, multiplying the Z extent by two gives
-	 * the full height of the obstacle.
-	 */
-    const FVector BoxExtent = ObstacleMesh->Bounds.BoxExtent;
-    return BoxExtent.Z * 2.0f;
-}
-
-
 void AObstacle::OnMeshBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent,
 	AActor* OtherActor,
@@ -112,20 +104,6 @@ void AObstacle::OnMeshBeginOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult
 ) {
-
-	//UE_LOG(
-	//	LogTemp,
-	//	Warning,
-	//	TEXT(
-	//		"GAME OVER OVERLAP: Obstacle=%s Location=%s | Character=%s Location=%s"
-	//	),
-	//	*GetName(),
-	//	*GetActorLocation().ToString(),
-	//	OtherActor ? *OtherActor->GetName() : TEXT("NULL"),
-	//	OtherActor ? *OtherActor->GetActorLocation().ToString() : TEXT("NULL")
-	//);
-
-
 	// We only care about the RunnerCharacter touching this obstacle.
 	ARunnerCharacter* RunnerCharacter = Cast<ARunnerCharacter>(OtherActor);
 	if (!RunnerCharacter) {
@@ -145,11 +123,18 @@ void AObstacle::OnMeshBeginOverlap(
 		return;
 	}
 
-	//UE_LOG(
-	//	LogTemp,
-	//	Warning,
-	//	TEXT("Obstacle: RunnerCharacter overlapped obstacle - GAME OVER")
-	//);
-
 	RunnerGameState->SetGameOver(true);
+}
+
+
+float AObstacle::GetObstacleHeight() const {
+	/**
+	 * Bounds.BoxExtent contains half of the bounding box's
+	 * dimensions.
+	 *
+	 * Therefore, multiplying the Z extent by two gives
+	 * the full height of the obstacle.
+	 */
+	const FVector BoxExtent = ObstacleMesh->Bounds.BoxExtent;
+	return BoxExtent.Z * 2.0f;
 }

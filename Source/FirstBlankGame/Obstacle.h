@@ -9,8 +9,8 @@
 UCLASS(Blueprintable)
 class FIRSTBLANKGAME_API AObstacle : public AActor {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	AObstacle();
 
 	/**
@@ -48,6 +48,20 @@ protected:
 	);
 
 private:
+	/**
+	 * Plain, empty root component, separate from the mesh.
+	 *
+	 * This exists so ObstacleMesh can be repositioned/rotated per
+	 * obstacle Blueprint variant (e.g. to correct an imported
+	 * mesh's off-center pivot or wrong facing direction) via its
+	 * own Location/Rotation — a ROOT component's transform IS the
+	 * actor's transform and can't be independently offset the same
+	 * way a child's can, since TrackManager always spawns obstacles
+	 * with a fixed rotation in C++.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Obstacle")
+	TObjectPtr<USceneComponent> Root;
+
 	/**
 	 * The visual mesh and collision for the obstacle.
 	 *
