@@ -11,10 +11,6 @@ ARunnerCharacter::ARunnerCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Configure the character's jump.
-	GetCharacterMovement()->JumpZVelocity = this->JumpZVelocity;
-	GetCharacterMovement()->GravityScale = this->GravityScale;
-
 	CurrentLane = ERunnerLane::Middle;
 }
 
@@ -22,6 +18,11 @@ ARunnerCharacter::ARunnerCharacter()
 void ARunnerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Configure the character's jump.
+	GetCharacterMovement()->JumpZVelocity = this->JumpZVelocity;
+	GetCharacterMovement()->GravityScale = this->GravityScale;
+
 	
 	// Record the character's starting lateral position as the
 	// Middle-lane baseline. Left/Right lane targets are computed

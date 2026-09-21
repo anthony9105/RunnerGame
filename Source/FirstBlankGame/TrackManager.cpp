@@ -145,7 +145,11 @@ void ATrackManager::SpawnInitialTiles() {
 	 */
 	for (int32 i = 0; i < InitialTileCount; ++i)
 	{
-		SpawnTile(i != 0);
+		// change to make the first 2 tiles not have obstacles, instead of just the first 1
+		bool SpawnObstacles = true;
+		if (i == 0 || i == 1) SpawnObstacles = false;
+
+		SpawnTile(SpawnObstacles);
 	}
 }
 
